@@ -8,6 +8,7 @@ export const signupSchema = Joi.object({
   ).required(),
   password: Joi.string().min(6).required(),
   confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
+   role: Joi.string().valid('user','admin') // এখানে যোগ করতে হবে
 });
 
 export const verifyOtpSchema = Joi.object({

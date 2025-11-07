@@ -1,9 +1,9 @@
 import express from "express";
-import OrderController from "../controllers/order.controller.js";
+import { getAllOrdersAdmin } from "../controllers/order.controller.js";
 import { protect, restrictTo } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/", protect, restrictTo("admin"), OrderController.getAllOrdersAdmin);
+router.get("/", protect, restrictTo("admin"), getAllOrdersAdmin);
 
 export default router;

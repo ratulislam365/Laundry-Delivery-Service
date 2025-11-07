@@ -56,11 +56,17 @@ const userSchema = new mongoose.Schema({
       required: false,
       default: [0, 0]
     },
-     role: {
-      type: String,
-      enum: ["user", "admin"],
-      default: "user",
-    },
+    //  role: {
+    //   type: String,
+    //   enum: ["user", "admin"],
+    //   default: "user",
+    // },
+  },
+   // Role field আলাদা করা হলো
+  role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user",
   },
 
 }, { timestamps: true });
