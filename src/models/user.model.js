@@ -24,6 +24,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  //  emailOrPhone: {
+  //   type: String,
+  //   required: true,
+  //   unique: true,
+  //   trim: true
+  // },
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -42,6 +48,10 @@ const userSchema = new mongoose.Schema({
   profileImage: {
     type: String,
     default: "https://cdn.app/default-avatar.png",
+  },
+   isDeleted: {
+    type: Boolean,
+    default: false
   },
 
   // 🆕 Updated GeoJSON location field

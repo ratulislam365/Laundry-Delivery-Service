@@ -6,63 +6,57 @@ import { sendEmail } from '../utils/sendEmail.js';
 import crypto from 'crypto';
 
 export default class AuthService {
-  // ================= SIGNUP =================
   static async signup({ fullName, emailOrPhone, password }) {
     let existingUser;
-    let isEmail = false;
+    let isEmail = emailOrPhone.includes('@');
 
-    if (emailOrPhone.includes('@')) {
-      isEmail = true;
-      existingUser = await UserRepository.findByEmail(emailOrPhone);
-    } else {
-      existingUser = await UserRepository.findByPhone(emailOrPhone);
-    }
+    existingUser = isEmail
+      ? await UserRepository.findByEmail(emailOrPhone)
+      : await UserRepository.findByPhone(emailOrPhone);
 
-    if (existingUser) {
+    if (existingUser)
       throw new AppError('User with this email or phone already exists', 409);
-    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + 10 * 60 * 1000;
 
     const userData = {
       fullname: fullName,
       password,
+      ...(isEmail
+        ? { email: emailOrPhone, emailVerificationOtp: otp, emailVerificationOtpExpires: otpExpires }
+        : { phonenumber: emailOrPhone, phoneVerificationOtp: otp, phoneVerificationOtpExpires: otpExpires }),
     };
 
-    if (isEmail) userData.email = emailOrPhone;
-    else userData.phonenumber = emailOrPhone;
+    const user = await UserRepository.createUser(userData);
 
-    // OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = Date.now() + 10 * 60 * 1000; // 10 মিনিট
+    if (isEmail) {
+      await sendEmail({
+        email: user.email,
+        subject: `Your Laundry App OTP Code ${otp}`,
+        body: `Your OTP code is ${otp}. It will expire in 10 minutes.`,
+      });
+    }
 
-    userData.emailVerificationOtp = otp;
-    userData.emailVerificationOtpExpires = otpExpires;
-
-    console.log('[DEBUG] signup - userData:', userData);
-
-    const user = await UserRepository.create(userData);
-
-    console.log(`Email verification OTP for ${user.email}: ${user.emailVerificationOtp}`);
-
-    const accessToken = user.getJwtToken();
-    const refreshToken = user.getRefreshToken();
-
-    return { user, accessToken, refreshToken };
+    return { message: 'OTP sent successfully', emailOrPhone: emailOrPhone };
   }
 
-  // ================= VERIFY OTP =================
-  static async verifyOtp(email, otp) {
-    console.log(`[DEBUG] verifyOtp - email: ${email}, otp: ${otp}`);
-    const user = await UserRepository.findByEmail(
-      email,
-      '+emailVerificationOtp +emailVerificationOtpExpires'
-    );
+  static async verifyOtp(identifier, otp) {
+    let isEmail = identifier.includes('@');
+    let user = isEmail
+      ? await UserRepository.findByEmail(identifier, '+emailVerificationOtp +emailVerificationOtpExpires')
+      : await UserRepository.findByPhone(identifier);
 
     if (!user) throw new AppError('User not found', 404);
 
-    if (user.emailVerificationOtp !== String(otp) || user.emailVerificationOtpExpires < Date.now()) {
-      console.log('[DEBUG] OTP mismatch or expired');
-      throw new AppError('Invalid or expired OTP', 400);
-    }
+    const isOtpValid =
+      (isEmail
+        ? user.emailVerificationOtp === String(otp) &&
+          user.emailVerificationOtpExpires > Date.now()
+        : user.phoneVerificationOtp === String(otp) &&
+          user.phoneVerificationOtpExpires > Date.now());
+
+    if (!isOtpValid) throw new AppError('Invalid or expired OTP', 400);
 
     user.isEmailVerified = true;
     user.emailVerificationOtp = undefined;
@@ -74,6 +68,7 @@ export default class AuthService {
 
     return { accessToken, refreshToken };
   }
+
 
   // ================= LOGIN =================
   static async login(email, password) {

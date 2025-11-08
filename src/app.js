@@ -3,6 +3,7 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import cors from 'cors';
 import { authRouter } from './routes/auth.routes.js';
+import userRouter from "./routes/user.routes.js";
 import { errorHandler } from './middlewares/error.middleware.js';
 import packageRoutes from './routes/package.routes.js';
 import adminPackageRoutes from './routes/admin.package.routes.js';
@@ -21,6 +22,12 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+
+
+// user management
+app.use("/api/user", userRouter);
+
 // Routes
 app.use('/api/auth', authRouter);
 
@@ -32,5 +39,10 @@ app.use('/api', adminPackageRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
 
+
+
+
+// Global Error Handler
+app.use(errorHandler);
 
 export default app;

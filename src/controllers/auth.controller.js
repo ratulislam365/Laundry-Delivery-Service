@@ -4,16 +4,10 @@ export default class AuthController {
   static async signup(req, res, next) {
     try {
       const { fullName, emailOrPhone, password } = req.body;
-      const { user, accessToken, refreshToken } = await AuthService.signup({ fullName, emailOrPhone, password });
+      const response = await AuthService.signup({ fullName, emailOrPhone, password });
       res.status(201).json({  
         success: true,
-        data: {
-          userId: user._id,
-          fullName: user.fullName,
-          emailOrPhone: user.email || user.phonenumber,
-          token: accessToken,
-          refreshToken: refreshToken
-        }
+        data: response
       });
     } catch (err) {
       next(err);

@@ -1,39 +1,48 @@
-import User from '../models/user.model.js';
+import User from "../models/user.model.js";
 
-const getUsers = async () => {
-    const users = await User.find();
-    return users;
-};
+class UserRepository {
+  static async findById(id) {
+    return await User.findById(id);
+  }
 
-const getUserById = async (id) => {
-    const user = await User.findById(id);
-    return user;
-};
+  static async findByIdWithPassword(id) {
+    return await User.findById(id).select("+password");
+  }
 
-const create = async (user) => {
-    const newUser = new User(user);
-    await newUser.save();
-    return newUser;
-};
+  static async findByEmail(email, select) {
+    return await User.findOne({ email }).select(select);
+  }
 
-const findByEmail = async (email, select) => {
-    const user = await User.findOne({ email }).select(select);
-    return user;
-};
+  static async findByPhone(phonenumber) {
+    return await User.findOne({ phonenumber });
+  }
 
-const findByPhone = async (phonenumber) => {
-    const user = await User.findOne({ phonenumber });
-    return user;
-};
+  static async findByEmailOrPhone(identifier) {
+    return await User.findOne({
+      $or: [{ email: identifier }, { phonenumber: identifier }]
+    });
+  }
 
-const findUserWithPasswordByEmail = async (email) => {
-    const user = await User.findOne({ email }).select('+password');
-    return user;
-};
+  static async findUserWithPasswordByEmail(email) {
+    return await User.findOne({ email }).select("+password");
+  }
 
-const findUserById = async (id) => {
-    const user = await User.findById(id);
-    return user;
-};
+  static async getAllUsers() {
+    return await User.find();
+  }
 
-export default { getUsers, getUserById, create, findByEmail, findUserById, findByPhone, findUserWithPasswordByEmail };
+  static async createUser(userData) {
+    const user = new User(userData);
+    return await user.save();
+  }
+
+  static async updateUser(id, updateData) {
+    return await User.findByIdAndUpdate(id, updateData, { new: true });
+  }
+
+  static async deleteUser(id) {
+    return await User.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
+  }
+}
+
+export default UserRepository;
