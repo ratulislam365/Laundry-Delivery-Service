@@ -36,12 +36,18 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false,
   },
+  refreshToken: {
+    type: String,
+    default: null, // লগইন করলে token save হবে, logout করলে null হয়ে যাবে
+  },
   isEmailVerified: {
     type: Boolean,
     default: false,
   },
   emailVerificationOtp: { type: String, select: false },
   emailVerificationOtpExpires: { type: Date, select: false },
+  phoneVerificationOtp: { type: String, select: false },
+  phoneVerificationOtpExpires: { type: Date, select: false },
   passwordResetOtp: { type: String, select: false },
   passwordResetOtpExpires: { type: Date, select: false },
 
@@ -122,5 +128,3 @@ userSchema.methods.generateOtp = function () {
 };
 
 export default mongoose.model('User', userSchema);
-
-

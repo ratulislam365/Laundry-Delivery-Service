@@ -12,7 +12,10 @@ export const signupSchema = Joi.object({
 });
 
 export const verifyOtpSchema = Joi.object({
-  email: Joi.string().email().required(),
+  emailOrPhone: Joi.alternatives().try(
+    Joi.string().email(),
+    Joi.string().pattern(/^[0-9]{10,15}$/)
+  ).required(),
   otp: Joi.string().required(),
 });
 

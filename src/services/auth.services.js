@@ -45,7 +45,7 @@ export default class AuthService {
     let isEmail = identifier.includes('@');
     let user = isEmail
       ? await UserRepository.findByEmail(identifier, '+emailVerificationOtp +emailVerificationOtpExpires')
-      : await UserRepository.findByPhone(identifier);
+      : await UserRepository.findByPhone(identifier, '+phoneVerificationOtp +phoneVerificationOtpExpires');
 
     if (!user) throw new AppError('User not found', 404);
 
@@ -78,9 +78,9 @@ export default class AuthService {
       throw new AppError('Invalid email or password', 401);
     }
 
-    if (!user.isEmailVerified) {
-      throw new AppError('Please verify your email before logging in', 403);
-    }
+    // if (!user.isEmailVerified) {
+    //   throw new AppError('Please verify your email before logging in', 403);
+    // }
 
     const accessToken = user.getJwtToken();
     const refreshToken = user.getRefreshToken();

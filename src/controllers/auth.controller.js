@@ -1,4 +1,5 @@
 import AuthService from '../services/auth.services.js';
+import User from '../models/user.model.js';
 
 export default class AuthController {
   static async signup(req, res, next) {
@@ -16,8 +17,8 @@ export default class AuthController {
 
   static async verifyOtp(req, res, next) {
     try {
-      const { email, otp } = req.body;
-      const { accessToken, refreshToken } = await AuthService.verifyOtp(email, otp);
+      const { emailOrPhone, otp } = req.body;
+      const { accessToken, refreshToken } = await AuthService.verifyOtp(emailOrPhone, otp);
       res.json({ accessToken, refreshToken });
     } catch (err) {
       next(err);
@@ -51,6 +52,22 @@ export default class AuthController {
       res.json({ message });
     } catch (err) {
       next(err);
+    }
+  }
+
+    static async logout(req, res, next) {
+    try {
+      if (req.user && req.user._id) {
+        const userId = req.user._id;
+        await User.findByIdAndUpdate(userId, { refreshToken: null });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "User logged out successfully",
+      });
+    } catch (error) {
+      next(error);
     }
   }
 }

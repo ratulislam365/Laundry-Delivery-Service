@@ -1,27 +1,27 @@
 import express from "express";
 import * as orderCtrl from "../controllers/order.controller.js";
-import { protect } from "../middlewares/auth.middleware.js";
+import { verifyAccessToken } from "../middlewares/auth.middleware.js";
 import { isAdmin } from "../middlewares/admin.middleware.js";
 
 const router = express.Router();
 
 // create order (checkout) - authenticated
-router.post("/", protect, orderCtrl.createOrder);
+router.post("/", verifyAccessToken, orderCtrl.createOrder);
 
 // get logged-in user's orders
-router.get("/my-orders", protect, orderCtrl.getMyOrders);
+router.get("/my-orders", verifyAccessToken, orderCtrl.getMyOrders);
 
 // get single order (owner or admin)
-router.get("/:id", protect, orderCtrl.getOrderById);
+router.get("/:id", verifyAccessToken, orderCtrl.getOrderById);
 
 // cancel order (owner)
-router.delete("/:id/cancel", protect, orderCtrl.cancelOrder);
+router.delete("/:id/cancel", verifyAccessToken, orderCtrl.cancelOrder);
 
 // admin updates whole order status (pickup -> washing -> delivery -> completed)
-router.put("/:id/status", protect, isAdmin, orderCtrl.updateOrderStatus);
+router.put("/:id/status", verifyAccessToken, isAdmin, orderCtrl.updateOrderStatus);
 
 // update steps (e.g., mark step complete) - can be used by staff
-router.put("/:id/steps", protect, isAdmin, orderCtrl.updateOrderSteps);
+router.put("/:id/steps", verifyAccessToken, isAdmin, orderCtrl.updateOrderSteps);
 
 
 export default router;

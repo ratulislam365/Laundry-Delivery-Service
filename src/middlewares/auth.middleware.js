@@ -1,70 +1,40 @@
-import jwt from "jsonwebtoken";
-import AppError from "../utils/appError.js";
-import User from "../models/user.model.js";
+import jwt from 'jsonwebtoken';
+import User from '../models/user.model.js';
+import AppError from '../utils/appError.js';
 
-export const authMiddleware = (req, res, next) => {
+export const verifyAccessToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(new AppError("No token provided", 401));
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next(new AppError('No token provided', 401));
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id };
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+    req.user = user;
     next();
   } catch (err) {
-    return next(new AppError("Invalid token", 401));
-  }
-};
-// export const authMiddleware = (req, res, next) => {
-//   const authHeader = req.headers.authorization;
-//   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-//     return next(new AppError('No token provided', 401));
-//   }
-
-//   const token = authHeader.split(' ')[1];
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = { id: decoded.id };
-//     next();
-//   } catch (err) {
-//     return next(new AppError('Invalid token', 401));
-//   }
-// };
-
-// src/middlewares/auth.middleware.js
-
-export const protect = async (req, res, next) => {
-  try {
-    let token;
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-
-    if (!token) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Not authorized" });
-    }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id);
-    next();
-  } catch (err) {
-    return res.status(401).json({ success: false, message: "Token invalid" });
+    return next(new AppError('Invalid or expired token', 401));
   }
 };
 
-export const restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return next(
-        new AppError("You do not have permission to perform this action", 403)
-      );
+export const optionalAccessToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+      const user = await User.findById(decoded.id);
+      if (user) {
+        req.user = user;
+      }
+    } catch (err) {
+      // Ignore invalid or expired tokens
     }
-    next();
-  };
+  }
+  next();
 };
