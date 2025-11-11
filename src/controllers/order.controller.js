@@ -2,8 +2,8 @@ import Order from "../models/order.model.js";
 import Payment from "../models/payment.model.js";
 import PackageModel from "../models/package.model.js";
 import mongoose from "mongoose";
-// import Stripe from "stripe";
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const calculateTotal = (pricePerBag, numberOfBags, serviceFee = 0) =>
   pricePerBag * numberOfBags + (serviceFee || 0);
@@ -58,49 +58,79 @@ export const createOrder = async (req, res, next) => {
       paymentId: null,
     });
 
-    // If payment method is cash -> create Payment record with pending
-    // If stripe -> create payment Intent below and return client_secret for frontend
+// --- Handle Payment ---
     if (paymentMethod === "cash") {
-      const payment = await Payment.create({
-        orderId: order._id,
-        userId,
-        method: "cash",
-        amount: totalPayable,
-        status: "pending",
-      });
+      const payment = await Payment.create(
+        [
+          {
+            orderId: order._id,
+            userId,
+            method: "cash",
+            amount: totalPayable,
+            status: "pending", // Cash payment is pending until collected
+          },
+        ],
+        { session }
+      );
+      
       order.paymentId = payment._id;
-      await order.save();
-
+      await order.save({ session });
+      
+      await session.commitTransaction(); // Commit transaction
+      session.endSession();
       return res.status(201).json({ order, payment });
+
+    } else if (paymentMethod === "stripe") {
+      // Create a Payment record in your DB *first*
+      const payment = await Payment.create(
+        [
+          {
+            orderId: order._id,
+            userId,
+            method: "stripe",
+            amount: totalPayable,
+            status: "pending", // Pending until webhook confirms success
+          },
+        ],
+        { session }
+      );
+
+      // Now create the Stripe Payment Intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalPayable * 100), // Stripe requires amount in cents
+        currency: "usd", // Change as needed
+        metadata: {
+          orderId: order._id.toString(),
+          userId: userId.toString(),
+          paymentId: payment._id.toString(), // Store our DB paymentId
+        },
+      });
+
+      // Update our Payment doc with the Stripe ID
+      payment.stripePaymentId = paymentIntent.id;
+      await payment.save({ session });
+
+      // Link payment to the order
+      order.paymentId = payment._id;
+      await order.save({ session });
+      
+      await session.commitTransaction(); // Commit transaction
+      session.endSession();
+      
+      // Send the client_secret to the frontend
+      return res.status(201).json({
+        order,
+        clientSecret: paymentIntent.client_secret,
+      });
+
+    } else {
+      await session.abortTransaction(); // Abort if payment method is invalid
+      session.endSession();
+      return res.status(400).json({ message: "Invalid payment method" });
     }
-
-    // ===== Stripe flow (example) =====
-    // else if (paymentMethod === "stripe") {
-    //   const paymentIntent = await stripe.paymentIntents.create({
-    //     amount: Math.round(totalPayable * 100), // cents
-    //     currency: "usd",
-    //     metadata: { orderId: order._id.toString(), userId: userId.toString() },
-    //   });
-    //   // create Payment doc with stripePaymentId and status pending
-    //   const payment = await Payment.create({
-    //     orderId: order._id,
-    //     userId,
-    //     method: "stripe",
-    //     amount: totalPayable,
-    //     status: "pending",
-    //     stripePaymentId: paymentIntent.id,
-    //   });
-    //   order.paymentId = payment._id;
-    //   await order.save();
-    //   return res.status(201).json({
-    //     order,
-    //     clientSecret: paymentIntent.client_secret
-    //   });
-    // }
-
-    // Default return if other method
-    res.status(201).json({ order });
   } catch (err) {
+    await session.abortTransaction(); // Rollback on error
+    session.endSession();
     next(err);
   }
 };

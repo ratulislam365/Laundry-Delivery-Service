@@ -10,10 +10,12 @@ import adminPackageRoutes from './routes/admin.package.routes.js';
 import orderRoutes from "./routes/order.routes.js";
 import adminOrderRoutes from "./routes/admin.order.routes.js";
 
-
+import { handleStripeWebhook } from './controllers/stripe.controller.js';
 
 
 const app = express();
+
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 // Middlewares
 app.use(cors());
@@ -21,9 +23,6 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
-
-
-
 
 // user management
 app.use("/api/user", userRouter);
@@ -44,5 +43,7 @@ app.use("/api/admin/orders", adminOrderRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
+
+
 
 export default app;
