@@ -90,6 +90,15 @@ const orderSchema = new mongoose.Schema({
     default: "pickup"
   },
 
+  // ✅ Payment Method Added
+  paymentMethod: {
+    type: String,
+    enum: ["stripe", "cash"],
+    required: true,
+    default: "cash"
+  },
+
+
   paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment", default: null }
 }, { timestamps: true });
 
