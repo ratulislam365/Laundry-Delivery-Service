@@ -1,0 +1,23 @@
+import winston from 'winston';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const { combine, timestamp, printf, colorize, align } = winston.format;
+
+const logFormat = printf(({ level, message, timestamp: ts }) => {
+  return `${ts} [${level}]: ${message}`;
+});
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: combine(
+    colorize(),
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    align(),
+    logFormat
+  ),
+  transports: [new winston.transports.Console()],
+});
+
+export default logger;

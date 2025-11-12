@@ -8,10 +8,12 @@ import { errorHandler } from './middlewares/error.middleware.js';
 import packageRoutes from './routes/package.routes.js';
 import adminPackageRoutes from './routes/admin.package.routes.js';
 import orderRoutes from "./routes/order.routes.js";
-import adminOrderRoutes from "./routes/admin.order.routes.js";
+import adminOrderRoutes from "./routes/admin-routes/adminOrder.routes.js";
 
 import { handleStripeWebhook } from './controllers/stripe.controller.js';
 
+import adminDashboardRoutes from "./routes/admin-routes/adminDashboard.routes.js";
+import transactionRoutes from "./routes/admin-routes/transaction.routes.js";
 
 const app = express();
 
@@ -39,11 +41,17 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
 
 
+// all admin part in this procet 
+app.use("/api/admin", adminDashboardRoutes);
+
+
+app.use("/api/admin/transactions", transactionRoutes);
+
+
+
+
 
 
 // Global Error Handler
 app.use(errorHandler);
-
-
-
 export default app;
