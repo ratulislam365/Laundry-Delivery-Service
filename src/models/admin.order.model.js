@@ -1,11 +1,38 @@
 import mongoose from "mongoose";
 
-const orderSchema = new mongoose.Schema({
-  orderId: { type: String, required: true },
-  customer: { type: String, required: true },
-  serviceType: { type: String, required: true },
-  status: { type: String, enum: ["In Progress", "Completed", "Pending"], default: "In Progress" },
-  platform: { type: String, enum: ["App", "Website"], required: true },
-}, { timestamps: true });
+const adminOrderSchema = new mongoose.Schema(
+  {
+    orderId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
 
-export default mongoose.model("Order", orderSchema);
+    customerName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    serviceType: {
+      type: String,
+      enum: ["Wash & Fold", "Iron Only", "Wash Only", "Full Service"],
+      required: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["Pending", "In Progress", "Completed"],
+      default: "Pending",
+    },
+
+    platform: {
+      type: String,
+      enum: ["App", "Website"],
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+export const AdminOrder = mongoose.model("AdminOrder", adminOrderSchema);

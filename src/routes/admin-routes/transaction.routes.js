@@ -1,8 +1,10 @@
+// src/routes/transaction.routes.js
 import express from "express";
-import { getRecentTransactions } from "../../controllers/admin-controllers/transacrion.controller.js";
+import { getRecentTransactions , addTransaction} from "../../controllers/admin-controllers/transaction.controller.js";
 
 const router = express.Router();
 
-router.get("/recent", getRecentTransactions);
+router.get("/", getRecentTransactions);
+router.post("/add",addTransaction)
 
 export default router;
