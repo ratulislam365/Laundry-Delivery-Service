@@ -2,8 +2,8 @@ import Stripe from "stripe";
 import Order from "../models/order.model.js";
 import Payment from "../models/payment.model.js";
 
-const stripe = new Stripe("sk_test_51SS1nAR3i1UyIGRrmjZzEHxWHzAadcyUoJK7SkLsOSHIO1F3tNV7OUuFVIB4BbkQ2zQ4CYywzmnZS6bs3oNanXPt004r90U98c");
-const webhookSecret = "whsec_...";
+// const stripe = new Stripe("sk_test_51SS1nAR3i1UyIGRrmjZzEHxWHzAadcyUoJK7SkLsOSHIO1F3tNV7OUuFVIB4BbkQ2zQ4CYywzmnZS6bs3oNanXPt004r90U98c");
+// const webhookSecret = "whsec_...";
 
 export const handleStripeWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];

@@ -1,10 +1,21 @@
-// src/routes/transaction.routes.js
 import express from "express";
-import { getRecentTransactions , addTransaction} from "../../controllers/admin-controllers/transaction.controller.js";
+import {
+  getRecentTransactions,
+  getTransactionById,
+  updateTransactionStatus
+} from "../../controllers/admin-controllers/transaction.controller.js";
+
+import { verifyAdmin } from "../middlewares/admin.middleware.js";
 
 const router = express.Router();
 
-router.get("/", getRecentTransactions);
-router.post("/add",addTransaction)
+// GET recent 50 transactions
+router.get("/transactions/recent", verifyAdmin, getRecentTransactions);
+
+// GET single transaction
+router.get("/transactions/:id", verifyAdmin, getTransactionById);
+
+// PATCH Update transaction status
+router.patch("/transactions/:id/status", verifyAdmin, updateTransactionStatus);
 
 export default router;
