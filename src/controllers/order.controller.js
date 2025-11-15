@@ -3,7 +3,7 @@ import Payment from "../models/payment.model.js";
 import PackageModel from "../models/package.model.js";
 import mongoose from "mongoose";
 import Stripe from "stripe";
-const stripe = new Stripe("sk_test_51SS1nAR3i1UyIGRrmjZzEHxWHzAadcyUoJK7SkLsOSHIO1F3tNV7OUuFVIB4BbkQ2zQ4CYywzmnZS6bs3oNanXPt004r90U98c");
+// const stripe = new Stripe(");
 
 const calculateTotal = (pricePerBag, numberOfBags, serviceFee = 0) =>
   pricePerBag * numberOfBags + (serviceFee || 0);
