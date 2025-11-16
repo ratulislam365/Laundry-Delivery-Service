@@ -63,6 +63,13 @@ const orderSchema = new mongoose.Schema(
       ref: "Payment",
       default: null,
     },
+    steps: [
+      {
+        name: { type: String, required: true, enum: ["pickup", "washing", "delivery"] },
+        completed: { type: Boolean, default: false },
+        completedAt: { type: Date },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -218,7 +218,7 @@ export const updateOrderStatus = async (req, res, next) => {
     }
 
     // Find the order
-    const order = await Order.findById(orderId).populate("package").populate("paymentId");
+    const order = await Order.findById(orderId).populate("paymentId"); // Removed .populate("package")
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     // Update the steps based on the new status
@@ -292,10 +292,63 @@ export const updateOrderSteps = async (req, res, next) => {
   }
 };
 
+export const updateOrder = async (req, res, next) => {
+  try {
+    const orderId = req.params.id;
+    const updates = req.body;
+
+    // Prevent direct modification of sensitive fields if necessary
+    delete updates.customer;
+    delete updates.orderId;
+    delete updates.paymentId;
+    delete updates.total; // Total should be recalculated if items or serviceFee change
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Only owner or admin can update
+    if (req.user.role !== "admin" && order.customer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this order" });
+    }
+
+    // If items are being updated, recalculate total
+    if (updates.items && Array.isArray(updates.items)) {
+      let newTotal = 0;
+      for (const item of updates.items) {
+        if (!item.name || typeof item.quantity !== 'number' || typeof item.price !== 'number' || item.quantity < 1 || item.price < 0) {
+          return res.status(400).json({ message: "Invalid item format in items array" });
+        }
+        newTotal += item.quantity * item.price;
+      }
+      // Add serviceFee if it's provided in the update or exists in the original order
+      const currentServiceFee = updates.serviceFee !== undefined ? updates.serviceFee : order.serviceFee;
+      order.total = newTotal + (currentServiceFee || 0);
+    } else if (updates.serviceFee !== undefined) {
+      // If only serviceFee is updated, recalculate total based on existing items
+      let currentItemsTotal = 0;
+      for (const item of order.items) {
+        currentItemsTotal += item.quantity * item.price;
+      }
+      order.total = currentItemsTotal + (updates.serviceFee || 0);
+    }
+
+
+    // Apply updates
+    Object.assign(order, updates);
+
+    await order.save();
+    res.json({ order });
+  } catch (err) {
+    console.error("Error updating order:", err);
+    next(err);
+  }
+};
+
 export const getAllOrdersAdmin = async (req, res, next) => {
   try {
     const orders = await Order.find({})
-      .populate("package")
       .populate("paymentId")
       .sort({ createdAt: -1 });
     res.json({ orders });

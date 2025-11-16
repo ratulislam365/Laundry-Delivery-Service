@@ -23,6 +23,9 @@ router.put("/:id/status", verifyAccessToken, isAdmin, orderCtrl.updateOrderStatu
 // update steps (e.g., mark step complete) - can be used by staff
 router.put("/:id/steps", verifyAccessToken, isAdmin, orderCtrl.updateOrderSteps);
 
+// PATCH update whole order (owner or admin)
+router.patch("/:id", verifyAccessToken, orderCtrl.updateOrder);
+
 
 export default router;
 
