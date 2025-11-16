@@ -12,6 +12,8 @@ const calculateTotal = (pricePerBag, numberOfBags, serviceFee = 0) =>
 
 // POST /api/orders
 export const createOrder = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const userId = req.user._id; // auth middleware sets req.user
     const {
@@ -31,41 +33,45 @@ export const createOrder = async (req, res, next) => {
 
     // basic validations
     if (!mongoose.Types.ObjectId.isValid(packageId)) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: "Invalid packageId" });
     }
 
-    const pkg = await PackageModel.findById(packageId);
-    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const pkg = await PackageModel.findById(packageId).session(session);
+    if (!pkg) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: "Package not found" });
+    }
 
     const pricePerBag = pkg.price;
     const totalPayable = calculateTotal(pricePerBag, numberOfBags, serviceFee);
 
     // create order (paymentId null for now)
-    const order = await Order.create({
-      user: userId,
-      fullName,
-      email,
-      phone,
-      address,
-      package: packageId,
-      numberOfBags,
-      pricePerBag,
-      serviceFee,
-      totalPayable,
-      pickupDate,
-      pickupTime,
-      dropoffDate,
-      dropoffTime,
-      status: "pickup",
-      paymentId: null,
-    });
+    const order = await Order.create(
+      [{
+        customer: userId,
+        address,
+        total: totalPayable,
+        serviceType: "wash & fold",
+        platform: "web",
+        items: [{ name: pkg.name, quantity: numberOfBags, price: pricePerBag }],
+        pickupDate,
+        dropoffDate,
+        paymentMethod,
+        status: "pending",
+        paymentId: null,
+      }],
+      { session }
+    );
+    const createdOrder = order[0];
 
 // --- Handle Payment ---
     if (paymentMethod === "cash") {
       const payment = await Payment.create(
-        [
-          {
-            orderId: order._id,
+        [{
+            orderId: createdOrder._id,
             userId,
             method: "cash",
             amount: totalPayable,
@@ -74,20 +80,20 @@ export const createOrder = async (req, res, next) => {
         ],
         { session }
       );
+      const createdPayment = payment[0];
       
-      order.paymentId = payment._id;
-      await order.save({ session });
+      createdOrder.paymentId = createdPayment._id;
+      await createdOrder.save({ session });
       
       await session.commitTransaction(); // Commit transaction
       session.endSession();
-      return res.status(201).json({ order, payment });
+      return res.status(201).json({ order: createdOrder, payment: createdPayment });
 
     } else if (paymentMethod === "stripe") {
       // Create a Payment record in your DB *first*
       const payment = await Payment.create(
-        [
-          {
-            orderId: order._id,
+        [{
+            orderId: createdOrder._id,
             userId,
             method: "stripe",
             amount: totalPayable,
@@ -96,32 +102,34 @@ export const createOrder = async (req, res, next) => {
         ],
         { session }
       );
+      const createdPayment = payment[0];
 
       // Now create the Stripe Payment Intent
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY); // Initialize Stripe here
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(totalPayable * 100), // Stripe requires amount in cents
         currency: "usd", // Change as needed
         metadata: {
-          orderId: order._id.toString(),
+          orderId: createdOrder._id.toString(),
           userId: userId.toString(),
-          paymentId: payment._id.toString(), // Store our DB paymentId
+          paymentId: createdPayment._id.toString(), // Store our DB paymentId
         },
       });
 
       // Update our Payment doc with the Stripe ID
-      payment.stripePaymentId = paymentIntent.id;
-      await payment.save({ session });
+      createdPayment.stripePaymentId = paymentIntent.id;
+      await createdPayment.save({ session });
 
       // Link payment to the order
-      order.paymentId = payment._id;
-      await order.save({ session });
+      createdOrder.paymentId = createdPayment._id;
+      await createdOrder.save({ session });
       
       await session.commitTransaction(); // Commit transaction
       session.endSession();
       
       // Send the client_secret to the frontend
       return res.status(201).json({
-        order,
+        order: createdOrder,
         clientSecret: paymentIntent.client_secret,
       });
 
@@ -133,6 +141,7 @@ export const createOrder = async (req, res, next) => {
   } catch (err) {
     await session.abortTransaction(); // Rollback on error
     session.endSession();
+    console.error("Error creating order:", err); // Added console.error for debugging
     next(err);
   }
 };
@@ -141,8 +150,7 @@ export const createOrder = async (req, res, next) => {
 export const getMyOrders = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const orders = await Order.find({ user: userId })
-      .populate("package")
+    const orders = await Order.find({ customer: userId }) // Changed 'user' to 'customer'
       .populate("paymentId")
       .sort({ createdAt: -1 });
     res.json({ orders });
@@ -156,13 +164,12 @@ export const getOrderById = async (req, res, next) => {
   try {
     const orderId = req.params.id;
     const order = await Order.findById(orderId)
-      .populate("package")
       .populate("paymentId");
 
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     // only owner or admin can view
-    if (req.user.role !== "admin" && order.user.toString() !== req.user._id.toString()) {
+    if (req.user.role !== "admin" && order.customer.toString() !== req.user._id.toString()) { // Changed 'user' to 'customer'
       return res.status(403).json({ message: "Not authorized" });
     }
 

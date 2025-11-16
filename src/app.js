@@ -15,6 +15,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 
 import userRoutes from "./routes/admin-routes/routes.user.routes.js";
 import notificationRoutes from "./routes/admin-routes/admin.notification.routes.js";
+import { handleStripeWebhook } from "./controllers/stripe.controller.js";
 
 const app = express();
 

@@ -1,0 +1,116 @@
+{
+	"info": {
+		"_postman_id": "a8c5f4b1-6b2a-4b1a-8f0a-6a9e3e7e4f3a",
+		"name": "Laundry Service - Admin API",
+		"description": "API collection for the Admin Panel of the Laundry Delivery Service.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Admin: Get Recent Orders",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{adminToken}}",
+						"type": "text",
+						"description": "JWT token for an admin user."
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/admin/orders/recent?page=1&limit=5&status=pending&q=John",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"admin",
+						"orders",
+						"recent"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "The page number to retrieve."
+						},
+						{
+							"key": "limit",
+							"value": "5",
+							"description": "The number of orders to return per page."
+						},
+						{
+							"key": "status",
+							"value": "pending",
+							"description": "Filter orders by status: 'pending', 'in_progress', 'completed', 'cancelled'."
+						},
+						{
+							"key": "platform",
+							"value": "web",
+							"description": "Filter orders by platform: 'app', 'web'.",
+							"disabled": true
+						},
+						{
+							"key": "serviceType",
+							"value": "wash & fold",
+							"description": "Filter by service type: 'wash & fold', 'iron only', 'full service'.",
+							"disabled": true
+						},
+						{
+							"key": "q",
+							"value": "John",
+							"description": "Search by orderId, customer name, or customer phone."
+						},
+						{
+							"key": "from",
+							"value": "2025-01-01",
+							"description": "Start date for filtering (YYYY-MM-DD).",
+							"disabled": true
+						},
+						{
+							"key": "to",
+							"value": "2025-12-31",
+							"description": "End date for filtering (YYYY-MM-DD).",
+							"disabled": true
+						}
+					]
+				},
+				"description": "Retrieves a paginated list of recent orders with powerful filtering and search capabilities designed for the admin panel.\n\n**Authentication:** Requires an admin-level JWT token.\n\n**Query Parameters:**\n- **`page`**, **`limit`**: Control pagination.\n- **`status`**, **`platform`**, **`serviceType`**: Filter the results based on specific criteria.\n- **`q`**: A flexible search term that queries across the order's ID, the customer's name, and the customer's phone number.\n- **`from`**, **`to`**: Define a date range to filter orders by their creation date."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "default"
+		},
+		{
+			"key": "adminToken",
+			"value": "your_admin_jwt_here",
+			"type": "string"
+		}
+	]
+}

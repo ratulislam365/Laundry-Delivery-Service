@@ -1,5 +1,5 @@
-// src/middlewares/admin.middleware.js
 // Named export: isAdmin (so your import { isAdmin } ... ) ঠিক থাকবে
+
 
 export const isAdmin = (req, res, next) => {
   try {

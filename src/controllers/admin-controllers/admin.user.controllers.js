@@ -1,4 +1,4 @@
-import User from "../../models/admin.user.model.js";
+import User from "../../models/user.model.js";
 
 // 🧮 Overview data for dashboard cards
 export const getOverview = async (req, res) => {

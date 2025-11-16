@@ -5,17 +5,17 @@ import {
   updateTransactionStatus
 } from "../../controllers/admin-controllers/transaction.controller.js";
 
-import { verifyAdmin } from "../middlewares/admin.middleware.js";
+import { isAdmin } from "../../middlewares/admin.middleware.js";
 
 const router = express.Router();
 
 // GET recent 50 transactions
-router.get("/transactions/recent", verifyAdmin, getRecentTransactions);
+router.get("/transactions/recent", isAdmin, getRecentTransactions);
 
 // GET single transaction
-router.get("/transactions/:id", verifyAdmin, getTransactionById);
+router.get("/transactions/:id", isAdmin, getTransactionById);
 
 // PATCH Update transaction status
-router.patch("/transactions/:id/status", verifyAdmin, updateTransactionStatus);
+router.patch("/transactions/:id/status", isAdmin, updateTransactionStatus);
 
 export default router;
